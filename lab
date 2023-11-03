@@ -1,0 +1,708 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace vlad_3kurs_lab_1
+{
+    internal class Program
+    {
+        //Задача 1
+        // Метод для бинарного поиска
+        static int BinarySearch(int[] arr, int target)
+        {
+            // Инициализация переменных для нижней и верхней границ поиска
+            int low = 0;
+            int high = arr.Length - 1;
+
+            while (low <= high)
+            {
+                // Вычисляем средний индекс и сравниваем значение по среднему индексу с целевым значением
+                int mid = (low + high) / 2;
+                // Если значения совпадают, возвращаем индекс
+                if (arr[mid] == target)
+                {
+                    return mid;
+                }
+                // Если значение в средней позиции меньше целевого значения, устанавливаем новое значение для нижней границы
+                else if (arr[mid] < target)
+                {
+                    low = mid + 1;
+                }
+                // Если значение в средней позиции больше целевого значения, устанавливаем новое значение для верхней границы
+                else
+                {
+                    high = mid - 1;
+                }
+            }
+
+            return -1;  // Возвращаем -1, если значение не найдено
+        }
+        // Метод для интерполяционного поиска
+        static int InterpolationSearch(int[] arr, int target)
+        {
+            // Инициализация переменных для нижней и верхней границ поиска
+            int low = 0;
+            int high = arr.Length - 1;
+
+            while (low <= high && target >= arr[low] && target <= arr[high])
+            {
+                // Вычисляем предполагаемую позицию целевого значения
+                int pos = low + ((target - arr[low]) * (high - low)) / (arr[high] - arr[low]);
+
+                // Если значения совпадают, возвращаем индекс
+                if (arr[pos] == target)
+                {
+                    return pos;
+                }
+                // Если значение в предполагаемой позиции меньше целевого значения, устанавливаем новое значение для нижней границы
+                else if (arr[pos] < target)
+                {
+                    low = pos + 1;
+                }
+                // Если значение в предполагаемой позиции больше целевого значения, устанавливаем новое значение для верхней границы
+                else
+                {
+                    high = pos - 1;
+                }
+            }
+
+            return -1;  // Возвращаем -1, если значение не найдено
+        }
+
+        //Задача 2
+        // Реализация алгоритма Кнута-Морриса-Пратта (КМП) для поиска подстроки в строке
+        static int[] ComputeLPSArray(string pattern)
+        {
+            int[] lps = new int[pattern.Length]; // Создаем массив для хранения значений префиксных функций
+            int len = 0; // Текущая длина наибольшего префикса, совпадающего с суффиксом
+            int i = 1; // Индекс текущего символа в подстроке
+
+            while (i < pattern.Length)
+            {
+                //если символы равны
+                if (pattern[i] == pattern[len])
+                {
+                    len++;
+                    lps[i] = len;
+                    i++;
+                }
+                else
+                {
+                    if (len != 0)
+                    {
+                        len = lps[len - 1];
+                        // Если символы не совпали, переходим к предыдущему наибольшему префиксу,
+                        // совпадающему с суффиксом, для продолжения сравнения
+                    }
+                    //обнуляем массив и идем дальше
+                    else
+                    {
+                        lps[i] = 0;
+                        i++;
+                    }
+                }
+            }
+
+            return lps;
+        }
+
+        static void KMPSearch(string text, string pattern)
+        {
+            int[] lps = ComputeLPSArray(pattern); // Вычисляем массив значений префиксных функций для подстроки
+            int i = 0; // Индекс текущего символа в тексте
+            int j = 0; // Индекс текущего символа в подстроке
+
+            while (i < text.Length)
+            {
+                if (pattern[j] == text[i])
+                {
+                    j++;
+                    i++;
+                }
+
+                if (j == pattern.Length)
+                {
+                    Console.WriteLine($"Слово найдено в позиции {i - j}");
+                    j = lps[j - 1];
+                    // Если полное совпадение найдено, выводим позицию слова и устанавливаем j в соответствии
+                    // с последним наибольшим префиксом, совпадающим с суффиксом
+                }
+                else if (i < text.Length && pattern[j] != text[i])
+                {
+                    if (j != 0)
+                    {
+                        j = lps[j - 1];
+                        // Если символы не совпали, переходим к предыдущему наибольшему префиксу,
+                        // совпадающему с суффиксом, для продолжения сравнения
+                    }
+                    else
+                    {
+                        i++;
+                    }
+                }
+            }
+        }
+
+
+        // Функция для заполнения массива смещений badChar
+        static void BadCharHeuristic(string str, int size, int[] badChar)
+        {
+            int i;
+
+            // Инициализируем все вхождения символов как -1
+            for (i = 0; i < 256; i++)
+                badChar[i] = -1;
+
+            // Заполняем фактические значения последнего вхождения символов
+            for (i = 0; i < size; i++)
+                badChar[(int)str[i]] = i;
+        }
+        //реализация алгоритма Бойера-Мура (БМ)
+        static void Search(string txt, string pat)
+        {
+            int m = pat.Length;
+            int n = txt.Length;
+
+            int[] badChar = new int[256];
+
+            // Заполняем массив смещений badChar
+            BadCharHeuristic(pat, m, badChar);
+
+            int s = 0; // сдвиг начинается с 0
+
+            while (s <= (n - m))
+            {
+                int j = m - 1;
+
+                // Продолжаем уменьшать индекс j, пока символы
+                // шаблона и текста совпадают в текущем сдвиге s
+                while (j >= 0 && pat[j] == txt[s + j])
+                    j--;
+
+                // Если шаблон найден при текущем сдвиге s,
+                // то j станет -1 после того, как выйдет из цикла while
+                if (j < 0)
+                {
+                    Console.WriteLine("Шаблон найден при сдвиге " + s);
+
+                    // Сдвигаем паттерн на (m-badChar[txt[s+m]]) позиций
+                    s += (s + m < n) ? m - badChar[txt[s + m]] : 1;
+                }
+                else
+                {
+                    // Сдвигаем паттерн на максимум из двух значений:
+                    // 1. Смещение, необходимое для выравнивания символа в тексте с его последним вхождением в образе
+                    // 2. 1 чтобы сместить паттерн вправо, чтобы выровнять текст
+                    s += Math.Max(1, j - badChar[txt[s + j]]);
+                }
+            }
+        }
+
+        //Дополнительное задание
+        public static int FindSecondLargest(int[] array)
+        {
+            // Проверяем, содержит ли массив минимум два элемента
+            if (array.Length < 2)
+            {
+                throw new InvalidOperationException("Массив должен содержать минимум 2 элемента");
+            }
+
+            int max = int.MinValue;     // Переменная для максимального элемента
+            int secondMax = int.MinValue;   // Переменная для второго максимального элемента
+
+            foreach (int num in array)
+            {
+                // Если найден элемент больше текущего максимального элемента,
+                // обновляем значения максимального и второго максимального элементов
+                if (num > max)
+                {
+                    secondMax = max;
+                    max = num;
+                }
+                // Если найден элемент между текущими максимальным и вторым максимальным элементами,
+                // обновляем значение второго максимального элемента
+                else if (num > secondMax && num < max)
+                {
+                    secondMax = num;
+                }
+            }
+
+            // Проверяем, был ли найден второй максимальный элемент
+            if (secondMax == int.MinValue)
+            {
+                throw new InvalidOperationException("Второй максимальный элемент не найден");
+            }
+
+            return secondMax;
+        }
+
+        //Задача по варианту
+
+        //Counting Sort
+        public static void CountingSortAlgorithm(int[] arr, int n)
+        {
+            int max = arr[0];
+            for (int i = 1; i < n; i++)
+            {
+                // Находим максимальное значение в массиве
+                if (arr[i] > max)
+                    max = arr[i];
+            }
+
+            // Создаем массив для подсчета количества элементов
+            int[] count = new int[max + 1];
+
+            // Подсчитываем количество вхождений каждого элемента
+            for (int i = 0; i < n; i++)
+            {
+                count[arr[i]]++;
+            }
+
+            // Выполняем сумму для получения позиций элементов
+            for (int i = 1; i <= max; i++)
+            {
+                count[i] += count[i - 1];
+            }
+
+            // Создаем временный массив для хранения отсортированных элементов
+            int[] sortedArray = new int[n];
+
+            // Расставляем элементы в отсортированном порядке
+            for (int i = n - 1; i >= 0; i--)
+            {
+                sortedArray[count[arr[i]] - 1] = arr[i];
+                count[arr[i]]--;
+            }
+
+            // Копируем элементы обратно в исходный массив
+            Array.Copy(sortedArray, arr, n);
+        }
+
+        public static void PrintArray(int[] arr)
+        {
+            foreach (int element in arr)
+            {
+                Console.Write(element + " ");
+            }
+        }
+
+        //Bubble Sort
+        public static void BubbleSort(int[] array)
+        {
+            int n = array.Length;
+
+            // Выполняем проходы по массиву
+            for (int i = 0; i < n - 1; i++)
+            {
+                // В каждом проходе сравниваем соседние элементы
+                // и меняем их местами, если нужно
+                for (int j = 0; j < n - i - 1; j++)
+                {
+                    // Если текущий элемент больше следующего,
+                    // меняем их местами
+                    if (array[j] > array[j + 1])
+                    {
+                        // Используем временную переменную для обмена значениями
+                        int temp = array[j];
+                        array[j] = array[j + 1];
+                        array[j + 1] = temp;
+                    }
+                }
+            }
+        }
+
+        //Сортировка слиянием
+        public static void MergeSort(int[] array)
+        {
+            // Рекурсивная функция для сортировки массива методом слияния
+
+            // Базовый случай: если размер массива <= 1, то он уже отсортирован
+            if (array.Length <= 1)
+                return;
+
+            // Находим середину массива
+            int mid = array.Length / 2;
+
+            // Создаем два подмассива: левый и правый
+            int[] leftArray = new int[mid];
+            int[] rightArray = new int[array.Length - mid];
+
+            // Копируем элементы из исходного массива в подмассивы
+            for (int i = 0; i < mid; i++)
+                leftArray[i] = array[i];
+
+            for (int i = mid; i < array.Length; i++)
+                rightArray[i - mid] = array[i];
+
+            // Рекурсивно сортируем левый и правый подмассивы
+            MergeSort(leftArray);
+            MergeSort(rightArray);
+
+            // Слияние отсортированных подмассивов в один отсортированный массив
+            Merge(leftArray, rightArray, array);
+        }
+
+        public static void Merge(int[] leftArray, int[] rightArray, int[] mergedArray)
+        {
+            // Функция для слияния двух отсортированных подмассивов в один отсортированный массив
+
+            int leftLength = leftArray.Length;
+            int rightLength = rightArray.Length;
+            int i = 0, j = 0, k = 0;
+
+            // Сравниваем элементы из левого и правого подмассивов и записываем их в общий отсортированный массив
+            while (i < leftLength && j < rightLength)
+            {
+                if (leftArray[i] <= rightArray[j])
+                {
+                    mergedArray[k] = leftArray[i];
+                    i++;
+                }
+                else
+                {
+                    mergedArray[k] = rightArray[j];
+                    j++;
+                }
+                k++;
+            }
+
+            // Копируем оставшиеся элементы из левого подмассива, если есть
+            while (i < leftLength)
+            {
+                mergedArray[k] = leftArray[i];
+                i++;
+                k++;
+            }
+
+            // Копируем оставшиеся элементы из правого подмассива, если есть
+            while (j < rightLength)
+            {
+                mergedArray[k] = rightArray[j];
+                j++;
+                k++;
+            }
+        }
+
+
+
+
+
+
+        public static int[] RandomList(int n)
+        {
+            int[] arrayt = new int[n];
+            Random random = new Random();
+
+            for (int i = 0; i < arrayt.Length; i++)
+            {
+                arrayt[i] = random.Next(1, 10);
+            }
+
+            return arrayt;
+        }
+        static void Main(string[] args)
+        {
+            Console.WriteLine("----Задача 1-----");
+            // Создаем и инициализируем массив arr целыми числами
+            Console.WriteLine("n=");
+            int n = Convert.ToInt32(Console.ReadLine());
+            int[] arr = RandomList(n);
+            PrintArray(arr);
+            Array.Sort(arr);
+            Console.WriteLine( );
+            PrintArray(arr);
+            Console.WriteLine();
+            // Запрос у пользователя значения для поиска
+            Console.Write("Введите значение для поиска: ");
+            int target = Convert.ToInt32(Console.ReadLine());
+
+            // Вызываем бинарный поиск и интерполяционный поиск
+            int binarySearchResult = BinarySearch(arr, target);
+            int interpolationSearchResult = InterpolationSearch(arr, target);
+
+            // Выводим результаты поиска на консоль
+            if (binarySearchResult != -1)
+            {
+                Console.WriteLine($"Бинарный поиск: Значение найдено на позиции {binarySearchResult}");
+            }
+            else
+            {
+                Console.WriteLine("Бинарный поиск: Значение не найдено");
+            }
+
+            if (interpolationSearchResult != -1)
+            {
+                Console.WriteLine($"Интерполяционный поиск: Значение найдено на позиции {interpolationSearchResult}");
+            }
+            else
+            {
+                Console.WriteLine("Интерполяционный поиск: Значение не найдено");
+            }
+
+
+
+            Console.WriteLine("----Задача 2-----");
+
+            Console.WriteLine("Введите текст:");
+            string text = Console.ReadLine();
+
+            Console.WriteLine("Введите искомое слово:");
+            string word = Console.ReadLine();
+
+            Console.WriteLine("Метод Кнута-Морриса-Пратта:");
+            KMPSearch(text, word);
+
+            Console.WriteLine("Метод Бойера-Мура:");
+            Search(text, word);
+
+
+            Console.WriteLine("----Задача Доп-----");
+            int[] array = { 3, 6, 1, 8, 4, 2, 9, 10, 5, 7 };
+            int secondLargest = FindSecondLargest(array);
+            Console.WriteLine("Второй по максимальности элемент: " + secondLargest);
+
+            Console.WriteLine("----Задача по варианту-----");
+
+            int[] arr1 = { 4, 2, 2, 8, 3, 3, 1 };
+
+            Console.WriteLine("Сортировка подсчетом");
+            Console.WriteLine("Исходный массив:");
+            PrintArray(arr1);
+
+            CountingSortAlgorithm(arr1, arr1.Length);
+
+            Console.WriteLine("\nОтсортированный массив:");
+            PrintArray(arr1);
+            Console.WriteLine();
+
+            Console.WriteLine("Сортировка пузырьком");
+            int[] array2 = { 3, 6, 1, 8, 4, 2, 9, 10, 5, 7 };
+            Console.WriteLine("Исходный массив:");
+            PrintArray(array2);
+            BubbleSort(array2);
+            Console.WriteLine("\nОтсортированный массив:");
+            PrintArray(array2);
+            Console.WriteLine();
+
+            Console.WriteLine("Сортировка слиянием");
+            int[] array3 = { 9, 5, 2, 7, 1, 8, 3, 6, 4 };
+            MergeSort(array3);
+            Console.WriteLine("Отсортированный массив:");
+            foreach (int num in array3)
+            {
+                Console.Write(num + " ");
+            }
+            Console.WriteLine();
+
+            Console.WriteLine("Тестирование на 10000");
+
+            int[] arrayt = new int[10000];
+            Random random = new Random();
+
+            for (int i = 0; i < arrayt.Length; i++)
+            {
+                arrayt[i] = random.Next(1,10);
+            }
+
+
+            Console.WriteLine("Сортировка подсчетом");
+            Stopwatch stopwatch = new Stopwatch();
+
+            // Запускаем секундомер
+            stopwatch.Start();
+            CountingSortAlgorithm(arrayt, arrayt.Length);
+
+            // Останавливаем секундомер
+            stopwatch.Stop();
+
+            // Получаем прошедшее время в миллисекундах
+            long elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+
+            // Выводим результат
+            Console.WriteLine($"Затраченное время: {elapsedMilliseconds} мс");
+
+            Console.WriteLine("Сортировка пузырьком");
+            arrayt = new int[10000];
+            random = new Random();
+
+            for (int i = 0; i < arrayt.Length; i++)
+            {
+                arrayt[i] = random.Next(1, 10);
+            }
+            stopwatch = new Stopwatch();
+
+            // Запускаем секундомер
+            stopwatch.Start();
+            BubbleSort(arrayt);
+            stopwatch.Stop();
+
+            // Получаем затраченное время
+            elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+
+            // Выводим результат
+            Console.WriteLine("Затраченное время: " + elapsedMilliseconds);
+
+            Console.WriteLine("Сортировка слиянием");
+            arrayt = new int[10000];
+            random = new Random();
+
+            for (int i = 0; i < arrayt.Length; i++)
+            {
+                arrayt[i] = random.Next(1, 10);
+            }
+            stopwatch = new Stopwatch();
+
+            // Запускаем секундомер
+            stopwatch.Start();
+            MergeSort(arrayt);
+            stopwatch.Stop();
+
+            // Получаем затраченное время
+            elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+
+            // Выводим результат
+            Console.WriteLine("Затраченное время: " + elapsedMilliseconds);
+
+            Console.WriteLine("Тестирование на 150000");
+
+            arrayt = new int[150000];
+            random = new Random();
+
+            for (int i = 0; i < arrayt.Length; i++)
+            {
+                arrayt[i] = random.Next(1, 10);
+            }
+
+
+            Console.WriteLine("Сортировка подсчетом");
+            stopwatch = new Stopwatch();
+
+            // Запускаем секундомер
+            stopwatch.Start();
+            CountingSortAlgorithm(arrayt, arrayt.Length);
+
+            // Останавливаем секундомер
+            stopwatch.Stop();
+
+            // Получаем прошедшее время в миллисекундах
+            elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+
+            // Выводим результат
+            Console.WriteLine($"Затраченное время: {elapsedMilliseconds} мс");
+
+            Console.WriteLine("Сортировка пузырьком");
+            arrayt = new int[150000];
+            random = new Random();
+
+            for (int i = 0; i < arrayt.Length; i++)
+            {
+                arrayt[i] = random.Next(1, 10);
+            }
+            stopwatch = new Stopwatch();
+
+            // Запускаем секундомер
+            stopwatch.Start();
+            BubbleSort(arrayt);
+            stopwatch.Stop();
+
+            // Получаем затраченное время
+            elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+
+            // Выводим результат
+            Console.WriteLine("Затраченное время: " + elapsedMilliseconds);
+
+            Console.WriteLine("Сортировка слиянием");
+            arrayt = new int[150000];
+            random = new Random();
+
+            for (int i = 0; i < arrayt.Length; i++)
+            {
+                arrayt[i] = random.Next(1, 10);
+            }
+            stopwatch = new Stopwatch();
+
+            // Запускаем секундомер
+            stopwatch.Start();
+            MergeSort(arrayt);
+            stopwatch.Stop();
+
+            // Получаем затраченное время
+            elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+
+            // Выводим результат
+            Console.WriteLine("Затраченное время: " + elapsedMilliseconds);
+
+            //Console.WriteLine("Тестирование на 1000000");
+
+            //arrayt = new int[1000000];
+            //random = new Random();
+
+            //for (int i = 0; i < arrayt.Length; i++)
+            //{
+            //    arrayt[i] = random.Next(1, 10);
+            //}
+
+
+            //Console.WriteLine("Сортировка подсчетом");
+            //stopwatch = new Stopwatch();
+
+            //// Запускаем секундомер
+            //stopwatch.Start();
+            //CountingSortAlgorithm(arrayt, arrayt.Length);
+
+            //// Останавливаем секундомер
+            //stopwatch.Stop();
+
+            //// Получаем прошедшее время в миллисекундах
+            //elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+
+            //// Выводим результат
+            //Console.WriteLine($"Затраченное время: {elapsedMilliseconds} мс");
+
+            //Console.WriteLine("Сортировка пузырьком");
+            //arrayt = new int[1000000];
+            //random = new Random();
+
+            //for (int i = 0; i < arrayt.Length; i++)
+            //{
+            //    arrayt[i] = random.Next(1, 10);
+            //}
+            //stopwatch = new Stopwatch();
+
+            //// Запускаем секундомер
+            //stopwatch.Start();
+            //BubbleSort(arrayt);
+            //stopwatch.Stop();
+
+            //// Получаем затраченное время
+            //elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+
+            //// Выводим результат
+            //Console.WriteLine("Затраченное время: " + elapsedMilliseconds);
+
+            //Console.WriteLine("Сортировка слиянием");
+            //arrayt = new int[1000000];
+            //random = new Random();
+
+            //for (int i = 0; i < arrayt.Length; i++)
+            //{
+            //    arrayt[i] = random.Next(1, 10);
+            //}
+            //stopwatch = new Stopwatch();
+
+            //// Запускаем секундомер
+            //stopwatch.Start();
+            //MergeSort(arrayt);
+            //stopwatch.Stop();
+
+            //// Получаем затраченное время
+            //elapsedMilliseconds = stopwatch.ElapsedMilliseconds;
+
+            //// Выводим результат
+            //Console.WriteLine("Затраченное время: " + elapsedMilliseconds);
+        }
+    }
+}
